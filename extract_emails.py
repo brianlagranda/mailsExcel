@@ -113,6 +113,6 @@ def extract_and_save_parts(output_filename, sender_email):
 if __name__ == "__main__":
     output_file = "EXCESO DE VELOCIDAD.xlsx"  # Nombre del archivo de salida Excel
     # Dirección de correo del remitente deseado
-    sender_email = "test@examble.com"
+    sender_email = "test@example.com"
 
     extract_and_save_parts(output_file, sender_email)
