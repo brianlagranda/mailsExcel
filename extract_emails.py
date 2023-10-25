@@ -5,32 +5,38 @@ from openpyxl.styles import Font, Color
 import re
 from datetime import datetime, timedelta
 
+def format_date_time(datetime_str):
+    # Split the datetime_str into lines
+    lines = datetime_str.split('\n')
 
-def format_date_time(original_datetime_str):
-    # Utilizar una expresión regular para extraer la fecha y hora en el formato original
-    match = re.search(
-        r'(\w{3}) (\d{1,2}) (\d{4}) (\d{1,2}:\d{2}[APM]+)\(GMT\(-(\d+)\)\)', original_datetime_str)
+    # Initialize a list to store the formatted date-time strings
+    formatted_date_times = []
 
-    if match:
-        month = match.group(1)
-        day = match.group(2)
-        year = match.group(3)
-        time = match.group(4)
-        timezone_offset = int(match.group(5))
+    # Process pairs of lines to reformat them
+    for i in range(0, len(lines), 2):
+        date_str = lines[i]
+        time_str = lines[i + 1]
 
-        # Mapear nombres de meses abreviados a números de mes
-        months = {
-            'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
-            'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
-        }
+        # Process and reformat date and time
+        date_time_match = re.search(r"(\w{3} \d{1,2} \d{4})\s*(\d{1,2}:\d{2}[APap][Mm])", f"{date_str} {time_str}")
+        if date_time_match:
+            date, time = date_time_match.groups()
 
-        # Formatear la fecha y hora en el nuevo estilo
-        formatted_datetime = f"{day}/{months[month]}/{year} - {time}"
+            # Convert the abbreviated month to a numeric month
+            months = {
+                'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
+                'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+            }
+            month_abbr, day, year = date.split()
+            formatted_date = f"{day}/{months[month_abbr]}/{year}"
 
-        return formatted_datetime
-    else:
-        return original_datetime_str
+            formatted_date_time = f"{formatted_date} - {time}"
+            formatted_date_times.append(formatted_date_time)
 
+    # Join the formatted date-time strings with line breaks
+    formatted_datetime_str = '\n'.join(formatted_date_times)
+
+    return(formatted_datetime_str)
 
 def extract_and_save_parts(output_filename, sender_email):
     outlook = win32com.client.Dispatch(
@@ -56,7 +62,6 @@ def extract_and_save_parts(output_filename, sender_email):
     count = 1  # Contador de sucesos
 
     for email in inbox.Items:
-        email_subject = email.Subject
         email_body = email.Body
         # Obtiene la dirección de correo del remitente
         email_sender = email.SenderEmailAddress
@@ -70,8 +75,8 @@ def extract_and_save_parts(output_filename, sender_email):
                 description_match = re.search(
                     r"Descripción: (.+?) -", email_body)
                 event_match = re.search(r"Suceso: (.+?) -", email_body)
-                datetime_match = re.search(
-                    r"Fecha y hora: ([^\n]+)", email_body)
+                datetime_match = re.search(r"Fecha y hora: ([A-Za-z]{3} \d{1,2} \d{4}(?:\s*)\d{1,2}:\d{2}[APap][Mm])", email_body)
+
                 location_match = re.search(
                     r"Ubicación:\s*(https://[^\n]+)", email_body)
 
@@ -99,6 +104,8 @@ def extract_and_save_parts(output_filename, sender_email):
                     sheet[f"D{row}"] = description
                     sheet[f"E{row}"] = format_date_time(datetime_str)
 
+                    print(format_date_time(datetime_str))
+
                     # Agregar el enlace de ubicación y aplicar formato de hipervínculo
                     sheet[f"F{row}"] = location
                     sheet[f"F{row}"].hyperlink = location
@@ -113,6 +120,6 @@ def extract_and_save_parts(output_filename, sender_email):
 if __name__ == "__main__":
     output_file = "EXCESO DE VELOCIDAD.xlsx"  # Nombre del archivo de salida Excel
     # Dirección de correo del remitente deseado
-    sender_email = "test@example.com"
+    sender_email = "daemon@lojack.com.ar"
 
     extract_and_save_parts(output_file, sender_email)
