@@ -4,39 +4,16 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Color
 import re
 from datetime import datetime, timedelta
+from dateutil.parser import parse
 
 def format_date_time(datetime_str):
-    # Split the datetime_str into lines
-    lines = datetime_str.split('\n')
-
-    # Initialize a list to store the formatted date-time strings
-    formatted_date_times = []
-
-    # Process pairs of lines to reformat them
-    for i in range(0, len(lines), 2):
-        date_str = lines[i]
-        time_str = lines[i + 1]
-
-        # Process and reformat date and time
-        date_time_match = re.search(r"(\w{3} \d{1,2} \d{4})\s*(\d{1,2}:\d{2}[APap][Mm])", f"{date_str} {time_str}")
-        if date_time_match:
-            date, time = date_time_match.groups()
-
-            # Convert the abbreviated month to a numeric month
-            months = {
-                'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
-                'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
-            }
-            month_abbr, day, year = date.split()
-            formatted_date = f"{day}/{months[month_abbr]}/{year}"
-
-            formatted_date_time = f"{formatted_date} - {time}"
-            formatted_date_times.append(formatted_date_time)
-
-    # Join the formatted date-time strings with line breaks
-    formatted_datetime_str = '\n'.join(formatted_date_times)
-
-    return(formatted_datetime_str)
+    try:
+        datetime_obj = parse(datetime_str)
+        formatted_date_time = datetime_obj.strftime('%d/%m/%Y - %I:%M %p')
+    except ValueError:
+        formatted_date_time = "Invalid Date/Time Format"
+    
+    return formatted_date_time
 
 def extract_and_save_parts(output_filename, sender_email):
     outlook = win32com.client.Dispatch(
@@ -104,8 +81,6 @@ def extract_and_save_parts(output_filename, sender_email):
                     sheet[f"D{row}"] = description
                     sheet[f"E{row}"] = format_date_time(datetime_str)
 
-                    print(format_date_time(datetime_str))
-
                     # Agregar el enlace de ubicación y aplicar formato de hipervínculo
                     sheet[f"F{row}"] = location
                     sheet[f"F{row}"].hyperlink = location
@@ -120,6 +95,6 @@ def extract_and_save_parts(output_filename, sender_email):
 if __name__ == "__main__":
     output_file = "EXCESO DE VELOCIDAD.xlsx"  # Nombre del archivo de salida Excel
     # Dirección de correo del remitente deseado
-    sender_email = "daemon@lojack.com.ar"
+    sender_email = "test@example.com"
 
     extract_and_save_parts(output_file, sender_email)
